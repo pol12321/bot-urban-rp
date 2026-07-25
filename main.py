@@ -109,7 +109,7 @@ bot = discord.Bot(intents=intents)
 @bot.event
 async def on_ready():
     bot.add_view(RoboButtonsView())
-    
+
     print(f"\n{'═'*40}")
     print(f"  Bot conectado como: {bot.user}")
     print(f"  Servidores:         {len(bot.guilds)}")
@@ -152,7 +152,7 @@ async def citaciones(
         title="🌆 / Citaciones Reportes",
         color=discord.Color.dark_theme()
     )
-    
+
     embed.add_field(
         name="👤 Nombre del usuario:", 
         value=f"• {usuario.mention}", 
@@ -331,9 +331,40 @@ if __name__ == "__main__":
         print("❌ ERROR: No se encontró BOT_TOKEN.")
         print("   Asegúrate de haber guardado 'BOT_TOKEN' en los Secrets (candado) de Replit.")
         exit(1)
+
+    # Comando para clic derecho en perfil
+    @bot.user_command(name="Enviar MD con el Bot")
+    @discord.default_permissions(administrator=True) # Solo tú podrás usarlo
+    async def enviar_md_perfil(ctx, usuario: discord.Member):
+        class MensajeModal(discord.ui.Modal):
+            def __init__(self):
+                super().__init__(title=f"Hablar con {usuario.display_name}")
+                self.add_item(
+                    discord.ui.InputText(
+                        label="Mensaje",
+                        placeholder="Escribe aquí lo que dirá el bot...",
+                        style=discord.InputTextStyle.long
+                    )
+                )
+
+            async def callback(self, interaction: discord.Interaction):
+                texto = self.children[0].value
+                try:
+                    await usuario.send(texto)
+                    await interaction.response.send_message(
+                        f"✅ Mensaje enviado a **{usuario.display_name}**: {texto}", 
+                        ephemeral=True
+                    )
+                except discord.Forbidden:
+                    await interaction.response.send_message(
+                        f"❌ **{usuario.display_name}** tiene los MD cerrados.", 
+                        ephemeral=True
+                    )
+
+        await ctx.send_modal(MensajeModal())
     
     # Iniciar servidor web
     keep_alive()
-    
+
     # Iniciar bot
     bot.run(BOT_TOKEN)
