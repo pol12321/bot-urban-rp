@@ -5,12 +5,12 @@ from discord.ext import commands
 from dotenv import load_dotenv
 from flask import Flask
 
-# Cargar variables de entorno (Secrets de Replit)
+# Cargar variables de entorno (Secrets de Replit/Render)
 load_dotenv()
-BOT_TOKEN = os.getenv("BOT_TOKEN")
+BOT_TOKEN = os.getenv("DISCORD_TOKEN") or os.getenv("BOT_TOKEN")
 
 # ─────────────────────────────────────────────
-#  Servidor Web para UptimeRobot
+#  Servidor Web para UptimeRobot / Keep Alive
 # ─────────────────────────────────────────────
 app = Flask("")
 
@@ -31,6 +31,7 @@ def keep_alive():
 # ─────────────────────────────────────────────
 #  IDs de Roles y Canales
 # ─────────────────────────────────────────────
+ID_DUENO = 1429580044375953470
 ROL_APERTURA_ID = 1454135341547130901
 ROL_ENCARGADO_ID = 1454135333150003354
 ROL_CITACIONES_ID = 1455521984921337926
@@ -323,13 +324,13 @@ async def on_application_command_error(ctx: discord.ApplicationContext, error: E
         raise error
 
 
-# Comando de perfil para enviar MD (Exclusivo para tu ID)
-ID_DUENO = 1429580044375953470
-
+# ─────────────────────────────────────────────
+#  5. COMANDO DE PERFIL: Enviar MD (Solo Tu ID)
+# ─────────────────────────────────────────────
 @bot.user_command(name="Enviar MD con el Bot")
-async def enviar_md_perfil(ctx, usuario: discord.Member):
+async def enviar_md_perfil(ctx: discord.ApplicationContext, usuario: discord.Member):
     if ctx.author.id != ID_DUENO:
-        await ctx.response.send_message("❌ Solo el dueño del bot puede usar esta función.", ephemeral=True)
+        await ctx.respond("❌ Solo el dueño del bot puede usar esta función.", ephemeral=True)
         return
 
     class MensajeModal(discord.ui.Modal):
@@ -358,7 +359,12 @@ async def enviar_md_perfil(ctx, usuario: discord.Member):
                 )
 
     await ctx.send_modal(MensajeModal())
-    keep_alive()
 
-    # Iniciar bot
+
+# ─────────────────────────────────────────────
+#  ENCENDIDO DEL BOT
+# ─────────────────────────────────────────────
+keep_alive()
+
+if BOT_TOKEN:
     bot.run(BOT_TOKEN)
