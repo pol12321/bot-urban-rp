@@ -5,12 +5,12 @@ from discord.ext import commands
 from dotenv import load_dotenv
 from flask import Flask
 
-# Cargar variables de entorno (Secrets de Replit/Render)
+# Cargar variables de entorno (Secrets)
 load_dotenv()
 BOT_TOKEN = os.getenv("DISCORD_TOKEN") or os.getenv("BOT_TOKEN")
 
 # ─────────────────────────────────────────────
-#  Servidor Web para UptimeRobot / Keep Alive
+#  Servidor Web para Keep Alive
 # ─────────────────────────────────────────────
 app = Flask("")
 
@@ -104,6 +104,9 @@ class RoboButtonsView(discord.ui.View):
 #  Inicializar Bot
 # ─────────────────────────────────────────────
 intents = discord.Intents.default()
+intents.messages = True
+intents.message_content = True
+
 bot = discord.Bot(intents=intents)
 
 
@@ -127,6 +130,34 @@ async def on_ready():
             name="el servidor 👀"
         )
     )
+
+
+# ─────────────────────────────────────────────
+#  Escuchar Respuestas Privadas (MD)
+# ─────────────────────────────────────────────
+@bot.event
+async def on_message(message: discord.Message):
+    # Ignorar mensajes del propio bot
+    if message.author == bot.user:
+        return
+
+    # Si el mensaje viene de un Mensaje Directo (Privado)
+    if isinstance(message.channel, discord.DMChannel):
+        dueno = await bot.fetch_user(ID_DUENO)
+        if dueno:
+            embed = discord.Embed(
+                title="📬 Nuevo mensaje privado recibido",
+                description=message.content or "*[Sin texto / archivo adjunto]*",
+                color=discord.Color.blue()
+            )
+            embed.set_author(name=f"{message.author.display_name} (@{message.author.name})", icon_url=message.author.display_avatar.url)
+            embed.set_footer(text=f"ID Usuario: {message.author.id}")
+
+            # Si el usuario mandó fotos/archivos
+            if message.attachments:
+                embed.set_image(url=message.attachments[0].url)
+
+            await dueno.send(embed=embed)
 
 
 # ─────────────────────────────────────────────
