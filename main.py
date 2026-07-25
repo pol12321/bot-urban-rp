@@ -35,7 +35,9 @@ ID_DUENO = 1429580044375953470
 ROL_APERTURA_ID = 1454135341547130901
 ROL_ENCARGADO_ID = 1454135333150003354
 ROL_CITACIONES_ID = 1455521984921337926
+ROL_CRIMINAL_ID = 1454135383507075183  # Rol necesario para poder usar /solicitar_robo
 CANAL_VOZ_CITACIONES_ID = 1454132886633713822
+CANAL_ROBOS_ID = 1454135383507075183  # (Cambia esto por el ID real del canal de texto de robos si es un canal diferente)
 
 
 # ─────────────────────────────────────────────
@@ -140,7 +142,6 @@ async def on_message(message: discord.Message):
     if message.author.bot:
         return
 
-    # Si es un Mensaje Directo (Privado) enviado al Bot
     if getattr(message.channel, "type", None) == discord.ChannelType.private or isinstance(message.channel, discord.DMChannel):
         try:
             dueno = await bot.fetch_user(ID_DUENO)
@@ -206,7 +207,7 @@ async def citaciones(
 
 
 # ─────────────────────────────────────────────
-#  2. COMANDO: Solicitar Robo
+#  2. COMANDO: Solicitar Robo (Requiere Rol Criminal)
 # ─────────────────────────────────────────────
 @bot.slash_command(
     name="solicitar_robo",
@@ -218,9 +219,10 @@ async def solicitar_robo(
     dinero: discord.Option(int, "Cantidad de dinero a robar"),
     imagen: discord.Option(discord.Attachment, "Prueba o imagen del robo")
 ):
-    role_apertura = ctx.guild.get_role(ROL_APERTURA_ID)
-    if role_apertura not in ctx.author.roles:
-        await ctx.respond("❌ No tienes el rol necesario para solicitar un robo.", ephemeral=True)
+    # Comprobar si el usuario tiene el rol de criminal
+    role_criminal = ctx.guild.get_role(ROL_CRIMINAL_ID)
+    if role_criminal not in ctx.author.roles:
+        await ctx.respond("❌ No tienes el rol de criminal necesario para solicitar un robo.", ephemeral=True)
         return
 
     embed = discord.Embed(
@@ -239,11 +241,15 @@ async def solicitar_robo(
     role_encargado = ctx.guild.get_role(ROL_ENCARGADO_ID)
     mencion_encargado = role_encargado.mention if role_encargado else ""
 
-    await ctx.respond(
-        content=f"🔔 {mencion_encargado} ¡Nueva solicitud de robo pendiente de revisión!",
-        embed=embed,
-        view=RoboButtonsView()
-    )
+    contenido_mensaje = f"🔔 {mencion_encargado} ¡Nueva solicitud de robo pendiente de revisión!"
+
+    canal_robos = ctx.guild.get_channel(CANAL_ROBOS_ID)
+
+    if canal_robos:
+        await canal_robos.send(content=contenido_mensaje, embed=embed, view=RoboButtonsView())
+        await ctx.respond("✅ ¡Solicitud de robo enviada correctamente al canal correspondiente!", ephemeral=True)
+    else:
+        await ctx.respond(content=contenido_mensaje, embed=embed, view=RoboButtonsView())
 
 
 # ─────────────────────────────────────────────
@@ -357,7 +363,7 @@ async def enviar_md_perfil(ctx: discord.ApplicationContext, usuario: discord.Mem
         def __init__(self):
             super().__init__(title=f"Hablar con {usuario.display_name}")
             self.add_item(
-                discord.ui.InputText(
+                discord.ui.InputTest(
                     label="Mensaje",
                     placeholder="Escribe aquí lo que dirá el bot...",
                     style=discord.InputTextStyle.long
