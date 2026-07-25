@@ -137,27 +137,28 @@ async def on_ready():
 # ─────────────────────────────────────────────
 @bot.event
 async def on_message(message: discord.Message):
-    # Ignorar mensajes del propio bot
-    if message.author == bot.user:
+    if message.author.bot:
         return
 
-    # Si el mensaje viene de un Mensaje Directo (Privado)
-    if isinstance(message.channel, discord.DMChannel):
-        dueno = await bot.fetch_user(ID_DUENO)
-        if dueno:
-            embed = discord.Embed(
-                title="📬 Nuevo mensaje privado recibido",
-                description=message.content or "*[Sin texto / archivo adjunto]*",
-                color=discord.Color.blue()
-            )
-            embed.set_author(name=f"{message.author.display_name} (@{message.author.name})", icon_url=message.author.display_avatar.url)
-            embed.set_footer(text=f"ID Usuario: {message.author.id}")
+    # Si es un Mensaje Directo (Privado) enviado al Bot
+    if getattr(message.channel, "type", None) == discord.ChannelType.private or isinstance(message.channel, discord.DMChannel):
+        try:
+            dueno = await bot.fetch_user(ID_DUENO)
+            if dueno:
+                embed = discord.Embed(
+                    title="📬 Nuevo mensaje privado recibido",
+                    description=message.content if message.content else "*[Archivo/Sin texto]*",
+                    color=discord.Color.blue()
+                )
+                embed.set_author(name=f"{message.author.display_name} (@{message.author.name})", icon_url=message.author.display_avatar.url)
+                embed.set_footer(text=f"ID Usuario: {message.author.id}")
 
-            # Si el usuario mandó fotos/archivos
-            if message.attachments:
-                embed.set_image(url=message.attachments[0].url)
+                if message.attachments:
+                    embed.set_image(url=message.attachments[0].url)
 
-            await dueno.send(embed=embed)
+                await dueno.send(embed=embed)
+        except Exception as e:
+            print(f"Error al reenviar MD: {e}")
 
 
 # ─────────────────────────────────────────────
@@ -341,18 +342,6 @@ async def cerrar_servidor(
         embed.set_image(url=imagen.url)
 
     await ctx.respond(content="@everyone", embed=embed)
-
-
-# ─────────────────────────────────────────────
-#  Manejo de Errores
-# ─────────────────────────────────────────────
-@bot.event
-async def on_application_command_error(ctx: discord.ApplicationContext, error: Exception):
-    if isinstance(error, commands.MissingPermissions):
-        await ctx.respond("❌ No tienes los permisos necesarios.", ephemeral=True)
-    else:
-        await ctx.respond(f"⚠️ Error inesperado: `{error}`", ephemeral=True)
-        raise error
 
 
 # ─────────────────────────────────────────────
