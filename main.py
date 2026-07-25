@@ -207,7 +207,7 @@ async def citaciones(
 
 
 # ─────────────────────────────────────────────
-#  2. COMANDO: Solicitar Robo (Dinero, Lugar, Policía negociador e Imagen)
+#  2. COMANDO: Solicitar Robo (Campos alineados horizontalmente)
 # ─────────────────────────────────────────────
 @bot.slash_command(
     name="solicitar_robo",
@@ -230,9 +230,11 @@ async def solicitar_robo(
         title="🚨 Solicitud de Robo 🚨",
         color=discord.Color.orange()
     )
+    
+    # Usamos inline=True para que se coloquen de lado en lugar de todo en columna
     embed.add_field(name="Solicitante", value=ctx.author.mention, inline=True)
-    embed.add_field(name="Dinero solicitado", value=f"${dinero:,}", inline=False)
-    embed.add_field(name="Lugar", value=lugar, inline=False)
+    embed.add_field(name="Dinero", value=f"${dinero:,}", inline=True)
+    embed.add_field(name="Lugar", value=lugar, inline=True)
     embed.add_field(name="Policía a cargo", value=policia_negociador.mention, inline=False)
 
     if imagen.content_type and imagen.content_type.startswith("image/"):
