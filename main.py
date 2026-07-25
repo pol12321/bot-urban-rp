@@ -37,7 +37,7 @@ ROL_ENCARGADO_ID = 1454135333150003354
 ROL_CITACIONES_ID = 1455521984921337926
 ROL_CRIMINAL_ID = 1454135383507075183  # Rol necesario para poder usar /solicitar_robo
 CANAL_VOZ_CITACIONES_ID = 1454132886633713822
-CANAL_ROBOS_ID = 1454135383507075183  # (Cambia esto por el ID real del canal de texto de robos si es un canal diferente)
+CANAL_ROBOS_ID = 1454135383507075183  # Canal de texto para enviar las solicitudes de robo
 
 
 # ─────────────────────────────────────────────
@@ -207,16 +207,17 @@ async def citaciones(
 
 
 # ─────────────────────────────────────────────
-#  2. COMANDO: Solicitar Robo (Requiere Rol Criminal)
+#  2. COMANDO: Solicitar Robo (Dinero, Lugar, Policía negociador e Imagen)
 # ─────────────────────────────────────────────
 @bot.slash_command(
     name="solicitar_robo",
-    description="Solicita un robo especificando usuario, dinero e imagen."
+    description="Solicita un robo especificando dinero, lugar, policía negociador e imagen."
 )
 async def solicitar_robo(
     ctx: discord.ApplicationContext,
-    usuario: discord.Option(discord.User, "Usuario al que vas a robar"),
     dinero: discord.Option(int, "Cantidad de dinero a robar"),
+    lugar: discord.Option(str, "Lugar donde se realiza el robo"),
+    policia_negociador: discord.Option(discord.User, "Policía que negoció el robo"),
     imagen: discord.Option(discord.Attachment, "Prueba o imagen del robo")
 ):
     # Comprobar si el usuario tiene el rol de criminal
@@ -230,8 +231,9 @@ async def solicitar_robo(
         color=discord.Color.orange()
     )
     embed.add_field(name="Solicitante", value=ctx.author.mention, inline=True)
-    embed.add_field(name="Víctima", value=usuario.mention, inline=True)
     embed.add_field(name="Dinero solicitado", value=f"${dinero:,}", inline=False)
+    embed.add_field(name="Lugar", value=lugar, inline=False)
+    embed.add_field(name="Policía a cargo", value=policia_negociador.mention, inline=False)
 
     if imagen.content_type and imagen.content_type.startswith("image/"):
         embed.set_image(url=imagen.url)
@@ -363,7 +365,7 @@ async def enviar_md_perfil(ctx: discord.ApplicationContext, usuario: discord.Mem
         def __init__(self):
             super().__init__(title=f"Hablar con {usuario.display_name}")
             self.add_item(
-                discord.ui.InputTest(
+                discord.ui.InputText(
                     label="Mensaje",
                     placeholder="Escribe aquí lo que dirá el bot...",
                     style=discord.InputTextStyle.long
