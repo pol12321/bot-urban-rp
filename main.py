@@ -323,47 +323,41 @@ async def on_application_command_error(ctx: discord.ApplicationContext, error: E
         raise error
 
 
-# ─────────────────────────────────────────────
-#  Arrancar Servidor Web y Bot
-# ─────────────────────────────────────────────
-if __name__ == "__main__":
-    if not BOT_TOKEN:
-        print("❌ ERROR: No se encontró BOT_TOKEN.")
-        print("   Asegúrate de haber guardado 'BOT_TOKEN' en los Secrets (candado) de Replit.")
-        exit(1)
+# Comando de perfil para enviar MD (Exclusivo para tu ID)
+ID_DUENO = 1429580044375953470
 
-    # Comando para clic derecho en perfil
-    @bot.user_command(name="Enviar MD con el Bot")
-    @discord.default_permissions(administrator=True) # Solo tú podrás usarlo
-    async def enviar_md_perfil(ctx, usuario: discord.Member):
-        class MensajeModal(discord.ui.Modal):
-            def __init__(self):
-                super().__init__(title=f"Hablar con {usuario.display_name}")
-                self.add_item(
-                    discord.ui.InputText(
-                        label="Mensaje",
-                        placeholder="Escribe aquí lo que dirá el bot...",
-                        style=discord.InputTextStyle.long
-                    )
+@bot.user_command(name="Enviar MD con el Bot")
+async def enviar_md_perfil(ctx, usuario: discord.Member):
+    if ctx.author.id != ID_DUENO:
+        await ctx.response.send_message("❌ Solo el dueño del bot puede usar esta función.", ephemeral=True)
+        return
+
+    class MensajeModal(discord.ui.Modal):
+        def __init__(self):
+            super().__init__(title=f"Hablar con {usuario.display_name}")
+            self.add_item(
+                discord.ui.InputText(
+                    label="Mensaje",
+                    placeholder="Escribe aquí lo que dirá el bot...",
+                    style=discord.InputTextStyle.long
+                )
+            )
+
+        async def callback(self, interaction: discord.Interaction):
+            texto = self.children[0].value
+            try:
+                await usuario.send(texto)
+                await interaction.response.send_message(
+                    f"✅ Mensaje enviado a **{usuario.display_name}**: {texto}", 
+                    ephemeral=True
+                )
+            except discord.Forbidden:
+                await interaction.response.send_message(
+                    f"❌ **{usuario.display_name}** tiene los MD cerrados.", 
+                    ephemeral=True
                 )
 
-            async def callback(self, interaction: discord.Interaction):
-                texto = self.children[0].value
-                try:
-                    await usuario.send(texto)
-                    await interaction.response.send_message(
-                        f"✅ Mensaje enviado a **{usuario.display_name}**: {texto}", 
-                        ephemeral=True
-                    )
-                except discord.Forbidden:
-                    await interaction.response.send_message(
-                        f"❌ **{usuario.display_name}** tiene los MD cerrados.", 
-                        ephemeral=True
-                    )
-
-        await ctx.send_modal(MensajeModal())
-    
-    # Iniciar servidor web
+    await ctx.send_modal(MensajeModal())
     keep_alive()
 
     # Iniciar bot
