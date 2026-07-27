@@ -220,7 +220,6 @@ async def solicitar_robo(
     policia_negociador: discord.Option(discord.User, "Policía que negoció el robo"),
     imagen: discord.Option(discord.Attachment, "Prueba o imagen del robo")
 ):
-    # Comprobar si el usuario tiene el rol de criminal
     role_criminal = ctx.guild.get_role(ROL_CRIMINAL_ID)
     if role_criminal not in ctx.author.roles:
         await ctx.respond("❌ No tienes el rol de criminal necesario para solicitar un robo.", ephemeral=True)
@@ -231,7 +230,6 @@ async def solicitar_robo(
         color=discord.Color.orange()
     )
     
-    # Usamos inline=True para distribuir mejor el espacio en horizontal
     embed.add_field(name="Solicitante", value=ctx.author.mention, inline=True)
     embed.add_field(name="Dinero", value=f"${dinero:,}", inline=True)
     embed.add_field(name="Lugar", value=lugar, inline=True)
@@ -355,29 +353,50 @@ async def cerrar_servidor(
 
 
 # ─────────────────────────────────────────────
-#  5. NUEVO COMANDO: Decir (Hablar a través del bot eligiendo canal)
+#  5. NUEVO COMANDO: Decir (Con Modal para respetar espacios y saltos de línea)
 # ─────────────────────────────────────────────
+class DecirModal(discord.ui.Modal):
+    def __init__(self, canal: discord.TextChannel):
+        super().__init__(title="Escribir mensaje con el Bot")
+        self.canal = canal
+        
+        self.add_item(
+            discord.ui.InputText(
+                label="Mensaje (respeta espacios y párrafos)",
+                placeholder="Pega o escribe tu texto aquí con saltos de línea...",
+                style=discord.InputTextStyle.long,
+                required=True
+            )
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        texto = self.children[0].value
+        try:
+            await self.canal.send(texto)
+            await interaction.response.send_message(
+                f"✅ Mensaje enviado con éxito en {self.canal.mention}", 
+                ephemeral=True
+            )
+        except Exception as e:
+            await interaction.response.send_message(
+                f"❌ Error al enviar el mensaje: {e}", 
+                ephemeral=True
+            )
+
 @bot.slash_command(
     name="decir",
-    description="Envía un mensaje a través del bot en el canal que elijas (Solo Dueño)."
+    description="Abre una ventana para escribir un mensaje respetando todos los espacios y párrafos (Solo Dueño)."
 )
 async def decir(
     ctx: discord.ApplicationContext,
-    canal: discord.Option(discord.TextChannel, "Canal de texto donde hablará el bot"),
-    mensaje: discord.Option(str, "Texto que enviará el bot")
+    canal: discord.Option(discord.TextChannel, "Canal de texto donde hablará el bot")
 ):
-    # Comprobar que solo tú (ID_DUENO) puedas usar este comando
     if ctx.author.id != ID_DUENO:
         await ctx.respond("❌ No tienes permiso para usar este comando.", ephemeral=True)
         return
 
-    try:
-        # Envía el mensaje al canal seleccionado
-        await canal.send(mensaje)
-        # Responde en secreto (ephemeral) para confirmar que se envió
-        await ctx.respond(f"✅ Mensaje enviado con éxito en {canal.mention}", ephemeral=True)
-    except Exception as e:
-        await ctx.respond(f"❌ Ocurrió un error al enviar el mensaje: {e}", ephemeral=True)
+    # Muestra la ventana modal que permite saltos de línea correctos
+    await ctx.send_modal(DecirModal(canal))
 
 
 # ─────────────────────────────────────────────
