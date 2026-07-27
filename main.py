@@ -231,7 +231,7 @@ async def solicitar_robo(
         color=discord.Color.orange()
     )
     
-    # Usamos inline=True para que se coloquen de lado en lugar de todo en columna
+    # Usamos inline=True para distribuir mejor el espacio en horizontal
     embed.add_field(name="Solicitante", value=ctx.author.mention, inline=True)
     embed.add_field(name="Dinero", value=f"${dinero:,}", inline=True)
     embed.add_field(name="Lugar", value=lugar, inline=True)
@@ -355,7 +355,33 @@ async def cerrar_servidor(
 
 
 # ─────────────────────────────────────────────
-#  5. COMANDO DE PERFIL: Enviar MD (Solo Tu ID)
+#  5. NUEVO COMANDO: Decir (Hablar a través del bot eligiendo canal)
+# ─────────────────────────────────────────────
+@bot.slash_command(
+    name="decir",
+    description="Envía un mensaje a través del bot en el canal que elijas (Solo Dueño)."
+)
+async def decir(
+    ctx: discord.ApplicationContext,
+    canal: discord.Option(discord.TextChannel, "Canal de texto donde hablará el bot"),
+    mensaje: discord.Option(str, "Texto que enviará el bot")
+):
+    # Comprobar que solo tú (ID_DUENO) puedas usar este comando
+    if ctx.author.id != ID_DUENO:
+        await ctx.respond("❌ No tienes permiso para usar este comando.", ephemeral=True)
+        return
+
+    try:
+        # Envía el mensaje al canal seleccionado
+        await canal.send(mensaje)
+        # Responde en secreto (ephemeral) para confirmar que se envió
+        await ctx.respond(f"✅ Mensaje enviado con éxito en {canal.mention}", ephemeral=True)
+    except Exception as e:
+        await ctx.respond(f"❌ Ocurrió un error al enviar el mensaje: {e}", ephemeral=True)
+
+
+# ─────────────────────────────────────────────
+#  6. COMANDO DE PERFIL: Enviar MD (Solo Tu ID)
 # ─────────────────────────────────────────────
 @bot.user_command(name="Enviar MD con el Bot")
 async def enviar_md_perfil(ctx: discord.ApplicationContext, usuario: discord.Member):
